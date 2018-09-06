@@ -1,60 +1,25 @@
-const mongo = require('mongodb').MongoClient;
-const client = require('socket.io').listen(4000).sockets;
+var path = require('path');
+var express = require('express');
+var app = express();
+const bodyParser = require('body-parser');
 
-// connect to mongo
-mongo.connect('mongodb://127.0.0.1/mongochat',function(err, db){
-    if(err){
-        throw err;
-    }
-    console.log('Mongo connected');
+var PORT = process.env.PORT || 3000;
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.static(path.join(__dirname, 'build')));
 
-    //connect to socket.io
-    client.on('connection', function(){
-        let chat = db.collection('chats');
-
-        sendStatus = function(s){
-            socket.emit('status',s);
-        }
-
-        //get chats from mongo
-        chat.find().limit(100).sort({_id:1}).toArray(function(err,res){
-            if(err){
-                throw err;
-            }
-
-            //emit message
-            socket.emit('output',res);
-        });
-
-        //handle input events
-        socket.on('input', function(data){
-            let name = data.name;
-            let message = data.message;
-
-            //check for name and message
-            if (name == '' || message == ''){
-                // send error
-                sendStatus('Please enter a name and message');
-            }
-            else {
-                // insert message
-                chat.insert({name: name, message: message}, function(){
-                    client.emit('output',[data]);
-                    // send status object
-                    sendStatus({
-                        message: 'Message',
-                        clear: true
-                    });
-                });
-            }
-        });
-
-        socket.on('clear', function(data){
-            //remove all
-            chat.remove({}, function(){
-                //emit
-                socket.emit('cleared');
-            });
-        })
-    });
+app.on('error', function (err) {
+  console.log('server error', err);
 });
+app.listen(PORT, function () {
+  console.log('App server is listening on port', PORT);
+});
+
+app.get('/api/test',(req,res) => {
+  console.log("message");
+});
+
+app.post('/api/send',(req,res) =>{
+
+});
+module.exports = app;
